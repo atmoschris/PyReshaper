@@ -1,0 +1,23 @@
+#!/bin/bash
+# MOAB/Torque submission script for SciNet GPC 
+#
+#PBS -l nodes=3:ppn=8,walltime=0:15:00
+#PBS -N run_slice2series
+ 
+# load modules (must match modules used for compilation)
+module load intel/13.1.1 openmpi
+  
+# DIRECTORY TO RUN - $PBS_O_WORKDIR is directory job was submitted from
+cd $PBS_O_WORKDIR
+   
+# EXECUTION COMMAND; -np = nodes*ppn
+
+env | grep PBS
+
+export WDIR=/home/p/peltier/dchandan/scratch/ctsm_test_data
+ 
+cp $PBS_NODEFILE $WDIR/nodesfile
+
+./makes_hostfile.py $WDIR/nodesfile 4 
+
+mpirun -n 4 --hostfile $WDIR/nodesfile python slice2series $WDIR $WDIR/b40.1850.1deg.clm2.h0.0011* -v 4
