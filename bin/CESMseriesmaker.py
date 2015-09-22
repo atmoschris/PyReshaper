@@ -27,7 +27,6 @@ from pyreshaper.specification import create_specifier
 from pyreshaper.reshaper import create_reshaper
 
 from asaptools.simplecomm import create_comm, SimpleComm
-from PyCESM.case.CESMCase import CESMCase
 
 
 #==============================================================================
@@ -43,38 +42,43 @@ def specification():
         """
         def __call__(self, parser, namespace, values, option_string=None):
             message = ''
-            if len(values) != 4:
-                message = 'argument "{}" requires 4 arguments'.format(self.dest)
+            if len(values) != 5:
+                message = 'argument "{}" requires 5 arguments'.format(self.dest)
 
             if values[0].isdigit():
                 err_msg = 'first argument to "{}" requires a string'.format(self.dest)
                 raise ValueError(err_msg)
 
-            model_choices = ['atm', 'lnd', 'ocn', 'ice']
-            if values[1] not in model_choices:
-                err_msg = 'second argument to "{0}" must be one of {1}'.format(self.dest, model_choices)
+            if values[1].isdigit():
+                err_msg = 'first argument to "{}" requires a string'.format(self.dest)
                 raise ValueError(err_msg)
 
-            try:
-                values[2] = int(values[2])
-            except ValueError:
-                message = 'third argument to "{}" requires an integer'.format(self.dest)
+            model_choices = ['atm', 'lnd', 'ocn', 'ice']
+            if values[2] not in model_choices:
+                err_msg = 'third argument to "{0}" must be one of {1}'.format(self.dest, model_choices)
+                raise ValueError(err_msg)
 
             try:
                 values[3] = int(values[3])
             except ValueError:
                 message = 'fourth argument to "{}" requires an integer'.format(self.dest)
 
-            if (values[2] > values[3]):
-                message = 'fourth argument to "{}" must be >= third argument'.format(self.dest)
+            try:
+                values[4] = int(values[4])
+            except ValueError:
+                message = 'fifth argument to "{}" requires an integer'.format(self.dest)
+
+            if (values[3] > values[4]):
+                message = 'fifth argument to "{}" must be >= fourth argument'.format(self.dest)
 
             if message:
                 raise argparse.ArgumentError(self, message)
 
             setattr(namespace, "case", values[0])
-            setattr(namespace, "model", values[1])
-            setattr(namespace, "start", values[2])
-            setattr(namespace, "end", values[3])
+            setattr(namespace, "root", values[1])
+            setattr(namespace, "model", values[2])
+            setattr(namespace, "start", values[3])
+            setattr(namespace, "end", values[4])
 
     return ExtractSpecificationData
 
@@ -230,9 +234,6 @@ def main(args):
 
         if not args.files:
 
-            # The CESM case object
-            case = CESMCase(args.case)
-
             total_years = args.end - args.start + 1
             years = range(args.start, args.end + 1)
 
@@ -240,7 +241,7 @@ def main(args):
             mtypes = {"atm":"cam2", "lnd":"clm2", "ocn":"pop", "ice":"cice"}
             freqtypes = {"atm":"h0", "lnd":"h0", "ocn":"h", "ice":"h"}
 
-            comp_direc = ospath.join(case.DOUT_S_ROOT, args.model, "hist")
+            comp_direc = ospath.join(args.root, args.model, "hist")
 
             # Generating the list of files that need to be worked on
             list_of_files = []
@@ -256,8 +257,8 @@ def main(args):
             list_of_files = args.files
 
         print "+" + "-"*78 + "+"
-        print "| Number of files to operate upon: ",
-        print ("{0:3d}".format(len(list_of_files))).center(78) + "|"
+        print "|" + ("Number of files to operate upon: {0:3d}".format(
+            len(list_of_files))).center(78) + "|"
         print "+" + "-"*78 + "+"
 
     else:
