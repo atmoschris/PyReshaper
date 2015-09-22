@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
-This script provides the command-line interface (CLI) to the PyReshaper
+This script provides the command-line interface (CLI) to the PyReshaper for
+CESM-specific operation.
 
 Copyright 2015, Deepak Chandan and UCAR
 """
