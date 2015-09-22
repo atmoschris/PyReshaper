@@ -20,8 +20,8 @@ def cli():
 
     # Main argument parser
     parser = argparse.ArgumentParser(
-        description="Convert time-slice NetCDF files to time-series "
-                    "NetCDF files")
+        description="Convert time-slice NetCDF files to "
+                    "time-series NetCDF files")
 
     # Positional arguments
     parser.add_argument("input_files", type=str, nargs="+",
