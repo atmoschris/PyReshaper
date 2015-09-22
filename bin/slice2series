@@ -2,77 +2,91 @@
 """
 This script provides the command-line interface (CLI) to the PyReshaper
 
-This script uses the optparse module for Python 2.6 and the newer argparse
-module for Python 2.7.
-
 Copyright 2015, University Corporation for Atmospheric Research
 See the LICENSE.rst file for details
 """
 
+import argparse
 import os.path as ospath
+
 from pyreshaper.specification import create_specifier
 from pyreshaper.reshaper import create_reshaper
 
-import argparse
 
-
+#==============================================================================
+# Command-line Interface
+#==============================================================================
 def cli():
-    parser = argparse.ArgumentParser(description="Convert CESM slices to series")
-    parser.add_argument("output_dir", type=str, action='store',
-                        help="Directory to write output files into")
+
+    # Main argument parser
+    parser = argparse.ArgumentParser(
+        description="Convert time-slice NetCDF files to time-series "
+                    "NetCDF files")
+
+    # Positional arguments
     parser.add_argument("input_files", type=str, nargs="+",
                         help="Input files to process")
-    parser.add_argument('-f', '--netcdf_format', default='netcdf4c', type=str, action='store',
-                      choices=['netcdf', 'netcdf4', 'netcdf4c'],
-                      help='NetCDF file format to be used for all output files. '
-                           '[Default: "netcdf4c"]')
-    parser.add_argument('-p', '--output_prefix', default='tseries.', type=str, action='store',
-                      help='String prefix for all output files.  The output file '
-                           'will be named according to the rule: '
-                           'output_prefix + variable_name + output_suffix '
-                           '[Default: "tseries."]')
-    parser.add_argument('-s', '--output_suffix', default='.nc', type=str, action='store',
-                      help='String suffix for all output files.  The output file '
-                           'will be named according to the rule: '
-                           'output_direc + output_prefix + variable_name + output_suffix '
-                           '[Default: ".nc"]')
-    parser.add_argument('-m', '--metadata', type=str, nargs="+", default=[],
-                      help='Names of a variable to be included in all output '
-                           'files. '
-                           '[Default: none]')
+
+    # Short-form arguments
     parser.add_argument('-d', '--deflate', default=3, type=int, action='store',
-                      help='Compression level for the output files. Only used '
-                           'when netcdf_format = netcdf4c.'
-                           '[Default: 3]')
-    parser.add_argument('--serial', default=False,
-                      action='store_true', dest='serial',
-                      help='Whether to run in serial (True) or parallel (False). '
-                           '[Default: False]')
+                        help='Compression level for the output files. Only '
+                             'used when netcdf_format = netcdf4c.'
+                             '[Default: 3]')
+    parser.add_argument('-f', '--netcdf_format', default='netcdf4c',
+                        type=str, action='store',
+                        choices=['netcdf', 'netcdf4', 'netcdf4c'],
+                        help='NetCDF file format to be used for all '
+                             'output files. [Default: "netcdf4c"]')
+    parser.add_argument('-m', '--metadata', type=str, nargs="+", default=[],
+                        help='Names of a variable to be included in all '
+                             'output files. [Default: none]')
+    parser.add_argument('-o', '--output_dir', type=str, action='store',
+                        help="Directory to write output files into")
+    parser.add_argument('-p', '--output_prefix', default='tseries.',
+                        type=str, action='store',
+                        help='String prefix for all output files.  The '
+                             'output file will be named according to the '
+                             'rule: output_dir + output_prefix + '
+                             'variable_name + output_suffix '
+                             '[Default: "tseries."]')
+    parser.add_argument('-s', '--output_suffix', default='.nc',
+                        type=str, action='store',
+                        help='String suffix for all output files.  '
+                             'The output file will be named according to '
+                             'the rule: output_dir + output_prefix + '
+                             'variable_name + output_suffix '
+                             '[Default: ".nc"]')
+    parser.add_argument('-v', '--verbosity', default=1, type=int,
+                        action='store',
+                        help='Verbosity level for level of output.  A value '
+                             'of 0 means no output, and a value greater than '
+                             '0 means more output detail. [Default: 1]')
+
+    # Long-form only arguments
+    parser.add_argument('--limit', default=0, type=int, action='store',
+                        help='The limit on the number of time-series files '
+                             'per processor to write. Useful when debugging. '
+                             'A limit of 0 means write all output files. '
+                             '[Default: 0]')
     parser.add_argument('--once', default=False,
-                      action='store_true', dest='once',
-                      help='Whether to write a "once" file with all metadata. '
-                           '[Default: False]')
-    parser.add_argument('--skip_existing', default=False,
-                      action='store_true', dest='skip_existing',
-                      help='Whether to skip time-series generation for '
-                           'variables with existing output files. '
-                           '[Default: False]')
+                        action='store_true', dest='once',
+                        help='Whether to write a "once" file with all '
+                             'metadata. [Default: False]')
     parser.add_argument('--overwrite', default=False,
-                      action='store_true', dest='overwrite',
-                      help='Whether to overwrite existing output files. '
-                           '[Default: False]')
-    parser.add_argument('-v', '--verbosity', default=1, type=int, action='store',
-                      help='Verbosity level for level of output.  A value of 0 '
-                           'means no output, and a value greater than 0 means '
-                           'more output detail. [Default: 1]')
-    parser.add_argument('-l', '--limit', default=0, type=int, action='store',
-                      help='The limit on the number of time-series files per '
-                           'processor to write.  Useful when debugging.  A '
-                           'limit of 0 means write all output files.'
-                           '[Default: 0]')
+                        action='store_true', dest='overwrite',
+                        help='Whether to overwrite existing output files. '
+                             '[Default: False]')
+    parser.add_argument('--serial', default=False,
+                        action='store_true', dest='serial',
+                        help='Whether to run in serial (True) or parallel '
+                             '(False). [Default: False]')
+    parser.add_argument('--skip_existing', default=False,
+                        action='store_true', dest='skip_existing',
+                        help='Whether to skip time-series generation for '
+                             'variables with existing output files. '
+                             '[Default: False]')
 
     # Parse the CLI options and assemble the Reshaper inputs
-    # print parser.parse_args()
     return parser.parse_args()
 
 
@@ -110,13 +124,5 @@ def main(args):
 #==============================================================================
 if __name__ == '__main__':
     args = cli()
-
-    # No need to do checks here for positional arguments as this is 
-    # automatically taken care of by argparse
-
-    # Checking for output directories
-    if not ospath.isdir(args.output_dir):
-      raise ValueError("Invalid output directory {0}. ".format(args.output_dir))
-
     main(args)
 
