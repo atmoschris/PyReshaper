@@ -1,2 +1,0 @@
-#!/usr/local/bin/bash
-rsync -avz --delete --exclude 'sync' --exclude 'build' --exclude 'dist' --exclude 'PyReshaper.egg-info' --exclude '.git' ./ scinet:/home/p/peltier/dchandan/Development/PyReshaper
