@@ -85,3 +85,10 @@ VERSION 0.9.4
 
 29 June 2015:
  - Newly automated versioning information
+
+VERSION 0.10.0
+--------------
+
+22 September 2015:
+ - Split output directory out from prefix.  Now these are separate items.
+ - 
