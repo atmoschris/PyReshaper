@@ -80,15 +80,11 @@ VERSION 0.9.3
 10 June 2015:
  - Bugfix: Now installs properly from PyPI
  
-VERSION 0.9.4
--------------
+VERSION 0.10.0
+--------------
 
 29 June 2015:
  - Newly automated versioning information
 
-VERSION 0.10.0
---------------
-
 22 September 2015:
  - Split output directory out from prefix.  Now these are separate items.
- - 
