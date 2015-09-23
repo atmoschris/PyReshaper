@@ -71,6 +71,10 @@ def create_reshaper(specifier, serial=False, verbosity=1,
             communication, if necessary.
         backend (str): Name of the NetCDF backend tool to use ("netcdf", "nio")
             Defaults to "nio".
+        timecode (bool): Whether to time the internal code or not.  Defaults
+            to True.
+        preprocess (bool): Whether to validate the initial input files before
+            running the Reshaper process.
 
     Returns:
         Reshaper: An instance of the Reshaper object requested
@@ -118,14 +122,15 @@ def create_reshaper(specifier, serial=False, verbosity=1,
             err_msg = 'Multiple specifiers must all be of type Specifier'
             raise TypeError(err_msg)
     else:
-        err_msg = 'Specifier type {0} not a valid Specifier object'.format(type(specifier))
+        err_msg = ('Specifier type {0!s} not a valid '
+                   'Specifier object').format(type(specifier))
         raise TypeError(err_msg)
 
 
 #==============================================================================
 # _pprint_dictionary - Helper method for printing diagnostic data
 #==============================================================================
-def _pprint_dictionary(title, dictionary, order=None):
+def _pprint_dictionary(title, dictionary):
     """
     Hidden method for pretty-printing a dictionary of numeric values,
     with a given title.
@@ -134,32 +139,16 @@ def _pprint_dictionary(title, dictionary, order=None):
         title (str): The title to give to the printed table
         dictionary (dict): A dictionary of numeric values
 
-    Keyword Arguments:
-        order (list): The print order for the keys in the dictionary (only
-            items that are in both the order list and the dictionary will be
-            printed)
-
     Return:
         str: A string with the pretty-printed dictionary data
     """
     # Type checking
-    if (type(title) is not str):
-        err_msg = 'Title must be a str type'
+    if not isinstance(title, (str, unicode)):
+        err_msg = 'Title must be a string'
         raise TypeError(err_msg)
-    if (not isinstance(dictionary, dict)):
+    if not isinstance(dictionary, dict):
         err_msg = 'Input dictionary needs to be a dictionary type'
         raise TypeError(err_msg)
-    if (order is not None and not isinstance(order, list)):
-        err_msg = 'Order list needs to be a list type'
-        raise TypeError(err_msg)
-
-    # Determine the print order, if present
-    print_order = dictionary.keys()
-    if (order is not None):
-        print_order = []
-        for item in order:
-            if (item in dictionary):
-                print_order.append(item)
 
     # Header line with Title
     hline = '-' * 50 + os.linesep
@@ -167,17 +156,13 @@ def _pprint_dictionary(title, dictionary, order=None):
 
     # Determine the longest timer name
     # and thus computer the column to line up values
-    valcol = 0
-    for name in print_order:
-        if (len(str(name)) > valcol):
-            valcol = len(str(name))
-    valcol += 2
+    valcol = max(len(str(name)) for name in dictionary) + 2
 
     # Print out the timer names and the accumulated times
-    for name in print_order:
+    for name, value in dictionary.items():
         spacer = ' ' * (valcol - len(str(name)))
-        ostr += str(name) + ':' + spacer
-        ostr += str(dictionary[name]) + os.linesep
+        ostr += '{0!s}:{1!s}{2!s}'.format(name, spacer, value)
+        ostr += os.linesep
     ostr += hline
 
     return ostr
@@ -1344,8 +1329,7 @@ class Slice2SeriesReshaper(Reshaper):
             self._simplecomm.sync()
 
             # Print timing maxima
-            o = self._timer.get_names()
-            time_table_str = _pprint_dictionary('TIMING DATA', max_times, order=o)
+            time_table_str = _pprint_dictionary('TIMING DATA', max_times)
             if self._simplecomm.is_manager():
                 self._vprint(time_table_str, verbosity=0)
 
@@ -1455,9 +1439,6 @@ class MultiSpecReshaper(Reshaper):
         # Storage for timing data
         self._times = {}
 
-        # Orders for printing timing data
-        self._time_orders = {}
-
         # Storage for all byte counters
         self._byte_counts = {}
 
@@ -1499,7 +1480,6 @@ class MultiSpecReshaper(Reshaper):
             this_times = rshpr._timer.get_all_times()
             self._times[spec_name] = rshpr._simplecomm.allreduce(
                 this_times, op='max')
-            self._time_orders[spec_name] = rshpr._timer.get_names()
             this_count = rshpr._byte_counts
             self._byte_counts[spec_name] = rshpr._simplecomm.allreduce(
                 this_count, op='sum')
@@ -1519,8 +1499,7 @@ class MultiSpecReshaper(Reshaper):
                 self._vprint('Specifier: ' + str(name), verbosity=0)
 
             times = self._times[name]
-            o = self._time_orders[name]
-            times_str = _pprint_dictionary('TIMING DATA', times, order=o)
+            times_str = _pprint_dictionary('TIMING DATA', times)
             if self._simplecomm.is_manager():
                 self._vprint(times_str, verbosity=0)
 
