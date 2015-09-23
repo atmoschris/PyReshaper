@@ -46,7 +46,7 @@ class Specifier(object):
     def __init__(self,
                  infiles=[],
                  ncfmt='netcdf4c',
-                 deflate=3,
+                 compression=3,
                  prefix='tseries.',
                  suffix='.nc',
                  outdir=None,
@@ -66,7 +66,7 @@ class Specifier(object):
             infiles (list): List of full-path input filenames
             ncfmt (str): String specifying the NetCDF
                 data format ('netcdf','netcdf4','netcdf4c')
-            deflate (int): Compression level
+            compression (int): Compression level
             prefix (str): String specifying the full-path prefix common
                 to all time-series output files
             suffix (str): String specifying the (base filename) suffix common
@@ -86,7 +86,7 @@ class Specifier(object):
         self.netcdf_format = ncfmt
 
         # Compression level for the output files
-        self.netcdf_deflate = deflate
+        self.compression_level = compression
 
         # The directory where the output files will be placed
         self.output_directory = outdir
@@ -138,6 +138,11 @@ class Specifier(object):
         # Validate the netcdf format string
         if not isinstance(self.netcdf_format, (str, unicode)):
             err_msg = "NetCDF format must be given as a string"
+            raise TypeError(err_msg)
+
+        # Validate the netcdf format string
+        if not isinstance(self.compression_level, int):
+            err_msg = "NetCDF compression level must be an integer"
             raise TypeError(err_msg)
 
         # Validate the output file prefix
@@ -202,7 +207,7 @@ class Specifier(object):
 
         # Validate that format is compatible with compression
         if self.netcdf_format != "netcdf4c":
-            if self.netcdf_deflate != 0:
+            if self.compression_level != 0:
                 print "Warning: Ignoring compression because output ",
                 print "file-format is '{0}'".format(self.netcdf_format)
 
